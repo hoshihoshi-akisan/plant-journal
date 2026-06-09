@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🌿 Plant Journal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  :root {
+    --green-deep: #2D4A35;
+    --green-mid: #4A7C59;
+    --green-light: #7FB08A;
+    --green-pale: #C8DFC0;
+    --cream: #F7F4EE;
+    --sand: #EDE8DC;
+    --bark: #8B6F47;
+    --bark-light: #C4A882;
+    --text: #2A2A2A;
+    --text-soft: #6B6B6B;
+    --white: #FFFFFF;
+    --warn: #C0622A;
+    --warn-bg: #FDF0E8;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(45,74,53,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* ヘッダー */
+  .app-header {
+    background: var(--green-deep);
+    color: var(--white);
+    padding: 16px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .app-header h1 {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 20px;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+  .header-sub {
+    font-size: 11px;
+    color: var(--green-pale);
+    margin-top: 2px;
+    letter-spacing: 0.05em;
+  }
+  .header-stats {
+    text-align: right;
+    font-size: 11px;
+    color: var(--green-pale);
+  }
+  .header-stats span {
+    font-size: 22px;
+    font-family: 'Shippori Mincho', serif;
+    color: var(--white);
+    display: block;
+    line-height: 1;
+  }
+
+  /* ナビ */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    background: var(--white);
+    border-top: 1px solid var(--green-pale);
+    display: flex;
+    z-index: 100;
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 10px 4px 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: var(--text-soft);
+    font-family: 'Noto Sans JP', sans-serif;
+    transition: color 0.2s;
+  }
+  .nav-btn.active { color: var(--green-deep); }
+  .nav-btn .icon { font-size: 20px; line-height: 1; }
+
+  /* ページ */
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  /* アラートバー */
+  .alert-bar {
+    background: var(--warn-bg);
+    border: 1px solid #F0C4A0;
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .alert-bar .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .alert-bar h3 { font-size: 12px; color: var(--warn); font-weight: 500; margin-bottom: 4px; }
+  .alert-bar .alert-list { font-size: 12px; color: var(--text-soft); }
+  .alert-list-item { padding: 2px 0; }
+
+  /* セクションタイトル */
+  .section-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 14px;
+    color: var(--green-deep);
+    margin-bottom: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* 植物カード */
+  .plant-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .plant-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    border-left: 3px solid var(--green-light);
+  }
+  .plant-card:active { transform: scale(0.98); }
+  .plant-card.warn { border-left-color: var(--warn); }
+  .plant-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .plant-photo {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    background: var(--green-pale);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+  .plant-photo img {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  .plant-info { flex: 1; min-width: 0; }
+  .plant-name {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--green-deep);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .plant-meta {
+    font-size: 11px;
+    color: var(--text-soft);
+    margin-top: 2px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .plant-water {
+    font-size: 11px;
+    color: var(--green-mid);
+    margin-top: 4px;
+  }
+  .plant-water.urgent { color: var(--warn); font-weight: 500; }
+  .health-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 3px;
+  }
+  .health-good { background: var(--green-light); }
+  .health-watch { background: #F0C040; }
+  .health-bad { background: var(--warn); }
+
+  /* 検索・フィルター */
+  .search-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .search-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--green-pale);
+    border-radius: 20px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--white);
+    color: var(--text);
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--green-mid); }
+  .filter-btn {
+    padding: 10px 14px;
+    border: 1px solid var(--green-pale);
+    border-radius: 20px;
+    background: var(--white);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--text-soft);
+    white-space: nowrap;
+  }
+  .filter-btn.active {
+    background: var(--green-deep);
+    color: var(--white);
+    border-color: var(--green-deep);
+  }
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+
+  /* ボタン */
+  .btn-primary {
+    background: var(--green-deep);
+    color: var(--white);
+    border: none;
+    border-radius: 24px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    width: 100%;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    transition: background 0.2s;
+  }
+  .btn-primary:active { background: var(--green-mid); }
+  .btn-secondary {
+    background: var(--sand);
+    color: var(--text);
+    border: none;
+    border-radius: 24px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    font-weight: 400;
+  }
+  .btn-danger {
+    background: none;
+    color: var(--warn);
+    border: 1px solid var(--warn);
+    border-radius: 24px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+  }
+  .btn-sm {
+    padding: 6px 14px;
+    font-size: 12px;
+    border-radius: 16px;
+  }
+  .fab {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    background: var(--green-deep);
+    color: var(--white);
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(45,74,53,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 90;
+  }
+
+  /* モーダル */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: 20px 20px 0 0;
+    padding: 20px;
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--green-pale);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .modal-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--green-deep);
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  /* フォーム */
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-bottom: 5px;
+    letter-spacing: 0.03em;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--green-pale);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--green-mid);
+  }
+  .form-textarea { resize: vertical; min-height: 80px; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+
+  /* 写真アップロード */
+  .photo-upload {
+    width: 100%;
+    height: 100px;
+    border: 2px dashed var(--green-pale);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-soft);
+    font-size: 13px;
+    gap: 6px;
+    background: var(--cream);
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-upload input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .photo-upload img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 詳細ページ */
+  .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--green-deep);
+    padding: 4px;
+  }
+  .detail-photo {
+    width: 100%;
+    height: 180px;
+    border-radius: var(--radius);
+    background: var(--green-pale);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .detail-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .detail-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .detail-card-title {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--sand);
+    font-size: 13px;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row .label { color: var(--text-soft); }
+  .detail-row .value { color: var(--text); font-weight: 500; text-align: right; }
+
+  /* 水やりボタン */
+  .water-action {
+    background: linear-gradient(135deg, var(--green-mid), var(--green-deep));
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px;
+    width: 100%;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .leaf-water-action {
+    background: var(--sand);
+    color: var(--green-deep);
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px;
+    width: 100%;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  /* 日記リスト */
+  .diary-list { display: flex; flex-direction: column; gap: 8px; }
+  .diary-item {
+    background: var(--sand);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .diary-date {
+    font-size: 11px;
+    color: var(--text-soft);
+    margin-bottom: 3px;
+    font-family: 'Shippori Mincho', serif;
+  }
+  .diary-text { font-size: 13px; color: var(--text); }
+
+  /* 植え替え */
+  .repot-list { display: flex; flex-direction: column; gap: 8px; }
+  .repot-item {
+    background: var(--sand);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .repot-info .repot-date { font-size: 11px; color: var(--text-soft); }
+  .repot-info .repot-pot { font-size: 13px; font-weight: 500; color: var(--text); margin-top: 2px; }
+  .repot-note { font-size: 11px; color: var(--text-soft); text-align: right; max-width: 120px; }
+
+  /* 統計 */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .stat-number {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 32px;
+    color: var(--green-deep);
+    line-height: 1.1;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-soft);
+    margin-top: 3px;
+  }
+  .stat-card.full {
+    grid-column: 1 / -1;
+  }
+
+  /* バックアップ */
+  .backup-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+  }
+  .backup-card h3 {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 15px;
+    color: var(--green-deep);
+    margin-bottom: 6px;
+  }
+  .backup-card p {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+
+  /* ヘルスバッジ */
+  .health-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .health-badge.good { background: #E8F5EB; color: var(--green-mid); }
+  .health-badge.watch { background: #FEF9E7; color: #9B7A00; }
+  .health-badge.bad { background: var(--warn-bg); color: var(--warn); }
+
+  /* トースト */
+  .toast {
+    position: fixed;
+    bottom: 96px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--green-deep);
+    color: var(--white);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 300;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* 空状態 */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-soft);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 10px; }
+  .empty-state p { font-size: 14px; }
+
+  /* タグ */
+  .tag {
+    display: inline-block;
+    background: var(--green-pale);
+    color: var(--green-deep);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .btn-row > * { flex: 1; }
+
+  .sort-select {
+    padding: 8px 12px;
+    border: 1px solid var(--green-pale);
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--white);
+    color: var(--text);
+    outline: none;
+    -webkit-appearance: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div class="app-header">
+  <div>
+    <div class="header-sub">Plant Journal</div>
+    <h1>🌿 みどりの記録</h1>
+  </div>
+  <div class="header-stats">
+    <span id="totalCount">0</span>
+    植物
+  </div>
+</div>
+
+<!-- ページ: ホーム -->
+<div class="page active" id="page-home">
+  <div id="alertSection"></div>
+
+  <div class="search-bar">
+    <input class="search-input" type="search" placeholder="🔍 植物を探す..." id="searchInput" oninput="renderList()">
+    <select class="sort-select" id="sortSelect" onchange="renderList()">
+      <option value="name">名前順</option>
+      <option value="water">水やり順</option>
+      <option value="health">健康状態順</option>
+      <option value="added">追加順</option>
+    </select>
+  </div>
+
+  <div class="filter-row" id="filterRow">
+    <button class="filter-btn active" onclick="setFilter('all', this)">すべて</button>
+    <button class="filter-btn" onclick="setFilter('water-today', this)">💧 今日</button>
+    <button class="filter-btn" onclick="setFilter('watch', this)">⚠️ 要観察</button>
+  </div>
+
+  <div class="plant-grid" id="plantList"></div>
+</div>
+
+<!-- ページ: 統計 -->
+<div class="page" id="page-stats">
+  <div class="section-title">📊 コレクション統計</div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-number" id="stat-total">0</div>
+      <div class="stat-label">植物の総数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="stat-watered-today">0</div>
+      <div class="stat-label">今日水やりした</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="stat-need-water">0</div>
+      <div class="stat-label">水やりが必要</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="stat-watch">0</div>
+      <div class="stat-label">要観察</div>
+    </div>
+    <div class="stat-card full">
+      <div class="stat-label" style="text-align:left;margin-bottom:8px;">📍 置き場所別</div>
+      <div id="stat-locations" style="font-size:13px;"></div>
+    </div>
+    <div class="stat-card full">
+      <div class="stat-label" style="text-align:left;margin-bottom:8px;">🪴 最近の植え替え</div>
+      <div id="stat-repots" style="font-size:13px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ページ: バックアップ -->
+<div class="page" id="page-backup">
+  <div class="section-title">💾 データ管理</div>
+  <div class="backup-card">
+    <h3>📤 エクスポート</h3>
+    <p>すべての植物データをJSONファイルとして保存します。定期的にバックアップしておくと安心です。</p>
+    <button class="btn-primary" onclick="exportData()">データをダウンロード</button>
+  </div>
+  <div class="backup-card">
+    <h3>📥 インポート</h3>
+    <p>以前エクスポートしたJSONファイルを読み込みます。現在のデータは上書きされます。</p>
+    <div class="photo-upload" style="height:70px;">
+      <span>📂</span>
+      <span>JSONファイルを選択</span>
+      <input type="file" accept=".json" onchange="importData(event)">
+    </div>
+  </div>
+  <div class="backup-card">
+    <h3>⚠️ データを全削除</h3>
+    <p>すべてのデータを削除します。この操作は元に戻せません。</p>
+    <button class="btn-danger btn-sm" onclick="confirmClearAll()">全データを削除</button>
+  </div>
+</div>
+
+<!-- ページ: 詳細 -->
+<div class="page" id="page-detail">
+  <div class="detail-header">
+    <button class="back-btn" onclick="showPage('home')">←</button>
+    <span class="section-title" id="detailName" style="margin:0;"></span>
+  </div>
+  <div id="detailContent"></div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn" onclick="openAddModal()">＋</button>
+
+<!-- ボトムナビ -->
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('home')" id="nav-home">
+    <span class="icon">🌿</span>植物
+  </button>
+  <button class="nav-btn" onclick="showPage('stats'); updateStats();" id="nav-stats">
+    <span class="icon">📊</span>統計
+  </button>
+  <button class="nav-btn" onclick="showPage('backup')" id="nav-backup">
+    <span class="icon">💾</span>管理
+  </button>
+</div>
+
+<!-- モーダル: 植物追加/編集 -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="addModalTitle">植物を追加</div>
+    <div class="form-group">
+      <label class="form-label">植物名 *</label>
+      <input class="form-input" id="inputName" placeholder="例: モンステラ">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">種類</label>
+        <select class="form-select" id="inputType">
+          <option value="">選択</option>
+          <option>観葉植物</option>
+          <option>多肉植物</option>
+          <option>塊根植物</option>
+          <option>エアプランツ</option>
+          <option>シダ類</option>
+          <option>ユーフォルビア</option>
+          <option>アガベ</option>
+          <option>サボテン</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">置き場所</label>
+        <input class="form-input" id="inputLocation" placeholder="例: リビング窓際">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">購入日</label>
+        <input class="form-input" type="date" id="inputBoughtDate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">水やり頻度</label>
+        <select class="form-select" id="inputWaterFreq">
+          <option value="1">毎日</option>
+          <option value="2">2日に1回</option>
+          <option value="3">3日に1回</option>
+          <option value="5">5日に1回</option>
+          <option value="7" selected>週1回</option>
+          <option value="10">10日に1回</option>
+          <option value="14">2週に1回</option>
+          <option value="21">3週に1回</option>
+          <option value="30">月1回</option>
+          <option value="0">管理しない</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ</label>
+      <textarea class="form-textarea" id="inputMemo" placeholder="置き場所の詳細、購入先など..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">写真</label>
+      <div class="photo-upload" id="photoUploadArea">
+        <span>📷</span>
+        <span>タップして写真を選択</span>
+        <input type="file" accept="image/*" id="photoInput" onchange="handlePhotoSelect(event)">
+      </div>
+    </div>
+    <input type="hidden" id="editingId">
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeModal('addModal')">キャンセル</button>
+      <button class="btn-primary" onclick="savePlant()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル: 水やり記録 -->
+<div class="modal-overlay" id="waterModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💧 水やり記録</div>
+    <div class="form-group">
+      <label class="form-label">水やり日</label>
+      <input class="form-input" type="date" id="waterDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ（任意）</label>
+      <input class="form-input" id="waterNote" placeholder="例: たっぷりあげた">
+    </div>
+    <input type="hidden" id="wateringPlantId">
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeModal('waterModal')">キャンセル</button>
+      <button class="btn-primary" onclick="saveWatering()">記録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル: 葉水記録 -->
+<div class="modal-overlay" id="leafWaterModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🌫️ 葉水記録</div>
+    <div class="form-group">
+      <label class="form-label">葉水した日</label>
+      <input class="form-input" type="date" id="leafWaterDate">
+    </div>
+    <input type="hidden" id="leafWaterPlantId">
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeModal('leafWaterModal')">キャンセル</button>
+      <button class="btn-primary" onclick="saveLeafWater()">記録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル: 健康状態 -->
+<div class="modal-overlay" id="healthModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🌡️ 健康状態を更新</div>
+    <div class="form-group">
+      <label class="form-label">状態</label>
+      <select class="form-select" id="healthStatus">
+        <option value="good">😊 元気</option>
+        <option value="watch">😐 要観察</option>
+        <option value="bad">😟 不調</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ</label>
+      <textarea class="form-textarea" id="healthNote" placeholder="状態の詳細..."></textarea>
+    </div>
+    <input type="hidden" id="healthPlantId">
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeModal('healthModal')">キャンセル</button>
+      <button class="btn-primary" onclick="saveHealth()">更新</button>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル: 日記 -->
+<div class="modal-overlay" id="diaryModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📝 一言日記を追加</div>
+    <div class="form-group">
+      <label class="form-label">日付</label>
+      <input class="form-input" type="date" id="diaryDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ</label>
+      <textarea class="form-textarea" id="diaryText" placeholder="例: 新芽が出てきた！"></textarea>
+    </div>
+    <input type="hidden" id="diaryPlantId">
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeModal('diaryModal')">キャンセル</button>
+      <button class="btn-primary" onclick="saveDiary()">記録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル: 植え替え -->
+<div class="modal-overlay" id="repotModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🪴 植え替えを記録</div>
+    <div class="form-group">
+      <label class="form-label">植え替え日</label>
+      <input class="form-input" type="date" id="repotDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">鉢のサイズ（号）</label>
+      <input class="form-input" type="number" id="repotPotSize" placeholder="例: 6" min="1" max="30" step="0.5">
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ（任意）</label>
+      <textarea class="form-textarea" id="repotNote" placeholder="例: 根がパンパンだったので一回り大きくした"></textarea>
+    </div>
+    <input type="hidden" id="repotPlantId">
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeModal('repotModal')">キャンセル</button>
+      <button class="btn-primary" onclick="saveRepot()">記録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== データ ====================
+const INITIAL_PLANTS = [
+  { name: 'モンステラ', type: '観葉植物', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'ヒメモンステラ', type: '観葉植物', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'フィカスウンベラータ', type: '観葉植物', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'エバーフレッシュ', type: '観葉植物', location: '', boughtDate: '', waterFreq: 5, memo: '' },
+  { name: 'エバーフレッシュの挿し木', type: '観葉植物', location: '', boughtDate: '', waterFreq: 2, memo: '水耕発根中' },
+  { name: 'ビカクシダ（群生）', type: 'シダ類', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'ビカクシダ（中）', type: 'シダ類', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'ビカクシダ（小）', type: 'シダ類', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'トキワシノブ', type: 'シダ類', location: '', boughtDate: '', waterFreq: 5, memo: '' },
+  { name: 'スキンダプサス', type: '観葉植物', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'サクラ', type: 'その他', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'アガベ 白鯨', type: 'アガベ', location: '', boughtDate: '', waterFreq: 14, memo: '' },
+  { name: 'アガベ ブラックアンドブルー', type: 'アガベ', location: '', boughtDate: '', waterFreq: 14, memo: '' },
+  { name: 'パキポディウムグラキリス（小）', type: '塊根植物', location: '', boughtDate: '', waterFreq: 10, memo: '' },
+  { name: 'パキポディウムグラキリス（極小）', type: '塊根植物', location: '', boughtDate: '', waterFreq: 10, memo: '' },
+  { name: 'センナメリディオナリス（中）', type: 'その他', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'センナメリディオナリス（極小）', type: 'その他', location: '', boughtDate: '', waterFreq: 7, memo: '' },
+  { name: 'アデニウム', type: '塊根植物', location: '', boughtDate: '', waterFreq: 10, memo: '' },
+  { name: 'ユーフォルビアパキポディオイデス', type: 'ユーフォルビア', location: '', boughtDate: '', waterFreq: 14, memo: '' },
+  { name: 'ギムノカクタス・サウエリ・ネリッサエ', type: 'サボテン', location: '', boughtDate: '', waterFreq: 14, memo: '' },
+  { name: 'サンスベリア', type: '観葉植物', location: '', boughtDate: '', waterFreq: 14, memo: '' },
+  { name: 'ユーフォルビアピッコロ', type: 'ユーフォルビア', location: '', boughtDate: '', waterFreq: 14, memo: '' },
+  { name: 'ハオルチア玉扇', type: '多肉植物', location: '', boughtDate: '', waterFreq: 14, memo: '' },
+  { name: '多肉植物 水耕①', type: '多肉植物', location: '', boughtDate: '', waterFreq: 7, memo: '水耕栽培' },
+  { name: '多肉植物 水耕②', type: '多肉植物', location: '', boughtDate: '', waterFreq: 7, memo: '水耕栽培' },
+  { name: 'アジアンタム', type: 'シダ類', location: '', boughtDate: '', waterFreq: 3, memo: '' },
+  { name: '峨眉山（ユーフォルビア）', type: 'ユーフォルビア', location: '', boughtDate: '', waterFreq: 14, memo: '' },
+  { name: 'チランジア', type: 'エアプランツ', location: '', boughtDate: '', waterFreq: 3, memo: '' },
+];
+
+let plants = [];
+let currentFilter = 'all';
+let currentDetailId = null;
+
+function loadData() {
+  const saved = localStorage.getItem('plantJournal');
+  if (saved) {
+    plants = JSON.parse(saved);
+  } else {
+    const today = formatDate(new Date());
+    plants = INITIAL_PLANTS.map((p, i) => ({
+      id: Date.now() + i,
+      name: p.name,
+      type: p.type,
+      location: p.location,
+      boughtDate: p.boughtDate,
+      waterFreq: p.waterFreq,
+      memo: p.memo,
+      photo: null,
+      health: 'good',
+      healthNote: '',
+      lastWatered: null,
+      lastLeafWater: null,
+      waterLogs: [],
+      leafWaterLogs: [],
+      diary: [],
+      repots: [],
+      addedAt: today,
+    }));
+    saveData();
+  }
+}
+
+function saveData() {
+  localStorage.setItem('plantJournal', JSON.stringify(plants));
+}
+
+// ==================== ユーティリティ ====================
+function formatDate(d) {
+  const date = new Date(d);
+  return date.toISOString().split('T')[0];
+}
+
+function formatDateJP(str) {
+  if (!str) return '—';
+  const d = new Date(str + 'T00:00:00');
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function daysUntilWater(plant) {
+  if (!plant.waterFreq || plant.waterFreq === 0) return null;
+  if (!plant.lastWatered) return 0;
+  const last = new Date(plant.lastWatered + 'T00:00:00');
+  const next = new Date(last);
+  next.setDate(next.getDate() + plant.waterFreq);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  return Math.round((next - today) / (1000*60*60*24));
+}
+
+function waterStatusText(plant) {
+  const d = daysUntilWater(plant);
+  if (d === null) return null;
+  if (!plant.lastWatered) return { text: '💧 まだ記録なし', urgent: true };
+  if (d < 0) return { text: `💧 ${Math.abs(d)}日遅れ`, urgent: true };
+  if (d === 0) return { text: '💧 今日水やり！', urgent: true };
+  if (d === 1) return { text: '💧 明日水やり', urgent: true };
+  return { text: `💧 あと${d}日`, urgent: false };
+}
+
+function getHealthBadge(health) {
+  if (health === 'good') return '<span class="health-badge good">😊 元気</span>';
+  if (health === 'watch') return '<span class="health-badge watch">😐 要観察</span>';
+  return '<span class="health-badge bad">😟 不調</span>';
+}
+
+function todayStr() {
+  return formatDate(new Date());
+}
+
+// ==================== ページ管理 ====================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const nav = document.getElementById('nav-' + name);
+  if (nav) nav.classList.add('active');
+  const fab = document.getElementById('fabBtn');
+  fab.style.display = (name === 'home') ? 'flex' : 'none';
+  if (name === 'home') renderList();
+}
+
+// ==================== フィルター ====================
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+// ==================== リスト表示 ====================
+function renderList() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+
+  let filtered = plants.filter(p => {
+    if (search && !p.name.toLowerCase().includes(search) && !p.type.toLowerCase().includes(search) && !p.location.toLowerCase().includes(search)) return false;
+    if (currentFilter === 'water-today') {
+      const d = daysUntilWater(p);
+      return d !== null && d <= 0;
+    }
+    if (currentFilter === 'watch') return p.health !== 'good';
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name, 'ja');
+    if (sort === 'water') {
+      const da = daysUntilWater(a) ?? 999;
+      const db = daysUntilWater(b) ?? 999;
+      return da - db;
+    }
+    if (sort === 'health') {
+      const order = { bad: 0, watch: 1, good: 2 };
+      return order[a.health] - order[b.health];
+    }
+    return 0;
+  });
+
+  // アラート
+  const urgent = plants.filter(p => {
+    const d = daysUntilWater(p);
+    return d !== null && d <= 0;
+  });
+  const alertSection = document.getElementById('alertSection');
+  if (urgent.length > 0) {
+    alertSection.innerHTML = `
+      <div class="alert-bar">
+        <div class="icon">💧</div>
+        <div>
+          <h3>水やりが必要な植物 ${urgent.length}件</h3>
+          <div class="alert-list">${urgent.slice(0,3).map(p => `<div class="alert-list-item">• ${p.name}</div>`).join('')}${urgent.length > 3 ? `<div class="alert-list-item">他 ${urgent.length-3}件...</div>` : ''}</div>
+        </div>
+      </div>`;
+  } else {
+    alertSection.innerHTML = '';
+  }
+
+  const container = document.getElementById('plantList');
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">🪴</div><p>植物が見つかりません</p></div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(p => {
+    const ws = waterStatusText(p);
+    const isWarn = ws && ws.urgent;
+    const healthDot = p.health === 'good' ? 'health-good' : p.health === 'watch' ? 'health-watch' : 'health-bad';
+    const photoHtml = p.photo
+      ? `<div class="plant-photo"><img src="${p.photo}" alt="${p.name}"></div>`
+      : `<div class="plant-photo">🌿</div>`;
+    return `
+      <div class="plant-card ${isWarn ? 'warn' : ''}" onclick="openDetail(${p.id})">
+        <div class="plant-card-inner">
+          ${photoHtml}
+          <div class="plant-info">
+            <div class="plant-name">${p.name}</div>
+            <div class="plant-meta">
+              ${p.type ? `<span class="tag">${p.type}</span>` : ''}
+              ${p.location ? `<span>📍${p.location}</span>` : ''}
+            </div>
+            ${ws ? `<div class="plant-water ${ws.urgent ? 'urgent' : ''}">${ws.text}</div>` : ''}
+          </div>
+          <span class="health-dot ${healthDot}"></span>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('totalCount').textContent = plants.length;
+}
+
+// ==================== 詳細 ====================
+function openDetail(id) {
+  currentDetailId = id;
+  const p = plants.find(x => x.id === id);
+  if (!p) return;
+
+  document.getElementById('detailName').textContent = p.name;
+  const ws = waterStatusText(p);
+
+  const photoHtml = p.photo
+    ? `<div class="detail-photo"><img src="${p.photo}" alt="${p.name}"></div>`
+    : `<div class="detail-photo">🌿</div>`;
+
+  const waterLogsHtml = (p.waterLogs || []).slice(-5).reverse().map(l =>
+    `<div class="diary-item"><div class="diary-date">${formatDateJP(l.date)}</div><div class="diary-text">${l.note || '記録のみ'}</div></div>`
+  ).join('') || '<div style="color:var(--text-soft);font-size:13px;">記録なし</div>';
+
+  const diaryHtml = (p.diary || []).slice().reverse().map(d =>
+    `<div class="diary-item"><div class="diary-date">${formatDateJP(d.date)}</div><div class="diary-text">${d.text}</div></div>`
+  ).join('') || '<div style="color:var(--text-soft);font-size:13px;">日記なし</div>';
+
+  const repotHtml = (p.repots || []).slice().reverse().map(r =>
+    `<div class="repot-item">
+      <div class="repot-info">
+        <div class="repot-date">${formatDateJP(r.date)}</div>
+        <div class="repot-pot">${r.potSize ? r.potSize + '号鉢' : '鉢サイズ未記録'}</div>
+      </div>
+      <div class="repot-note">${r.note || ''}</div>
+    </div>`
+  ).join('') || '<div style="color:var(--text-soft);font-size:13px;">記録なし</div>';
+
+  document.getElementById('detailContent').innerHTML = `
+    ${photoHtml}
+    <div class="detail-card">
+      <div class="detail-card-title">基本情報</div>
+      <div class="detail-row"><span class="label">種類</span><span class="value">${p.type || '—'}</span></div>
+      <div class="detail-row"><span class="label">置き場所</span><span class="value">${p.location || '—'}</span></div>
+      <div class="detail-row"><span class="label">購入日</span><span class="value">${formatDateJP(p.boughtDate)}</span></div>
+      <div class="detail-row"><span class="label">健康状態</span><span class="value">${getHealthBadge(p.health)}</span></div>
+      ${p.memo ? `<div class="detail-row"><span class="label">メモ</span><span class="value" style="max-width:200px;word-break:break-all;">${p.memo}</span></div>` : ''}
+    </div>
+
+    <div class="detail-card">
+      <div class="detail-card-title">水やり管理</div>
+      <div class="detail-row"><span class="label">頻度</span><span class="value">${p.waterFreq === 0 ? '管理しない' : p.waterFreq + '日に1回'}</span></div>
+      <div class="detail-row"><span class="label">最後に水やり</span><span class="value">${formatDateJP(p.lastWatered)}</span></div>
+      <div class="detail-row"><span class="label">最後に葉水</span><span class="value">${formatDateJP(p.lastLeafWater)}</span></div>
+      ${ws ? `<div class="detail-row"><span class="label">次回水やり</span><span class="value" style="color:${ws.urgent ? 'var(--warn)' : 'var(--green-mid)'}">${ws.text}</span></div>` : ''}
+    </div>
+
+    <button class="water-action" onclick="openWaterModal(${p.id})">💧 水やりを記録する</button>
+    <button class="leaf-water-action" onclick="openLeafWaterModal(${p.id})">🌫️ 葉水を記録する</button>
+
+    <div class="detail-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="detail-card-title" style="margin:0;">水やり履歴</div>
+      </div>
+      <div class="diary-list">${waterLogsHtml}</div>
+    </div>
+
+    <div class="detail-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="detail-card-title" style="margin:0;">📝 一言日記</div>
+        <button class="btn-secondary btn-sm" onclick="openDiaryModal(${p.id})">追加</button>
+      </div>
+      <div class="diary-list">${diaryHtml}</div>
+    </div>
+
+    <div class="detail-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="detail-card-title" style="margin:0;">🪴 植え替え記録</div>
+        <button class="btn-secondary btn-sm" onclick="openRepotModal(${p.id})">追加</button>
+      </div>
+      <div class="repot-list">${repotHtml}</div>
+    </div>
+
+    <div class="detail-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="detail-card-title" style="margin:0;">🌡️ 健康状態</div>
+        <button class="btn-secondary btn-sm" onclick="openHealthModal(${p.id})">更新</button>
+      </div>
+      ${getHealthBadge(p.health)}
+      ${p.healthNote ? `<div style="font-size:13px;color:var(--text-soft);margin-top:8px;">${p.healthNote}</div>` : ''}
+    </div>
+
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn-secondary" onclick="openEditModal(${p.id})">✏️ 編集</button>
+      <button class="btn-danger" onclick="deletePlant(${p.id})">🗑️ 削除</button>
+    </div>
+  `;
+
+  showPage('detail');
+}
+
+// ==================== モーダル ====================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openAddModal() {
+  document.getElementById('addModalTitle').textContent = '植物を追加';
+  document.getElementById('inputName').value = '';
+  document.getElementById('inputType').value = '';
+  document.getElementById('inputLocation').value = '';
+  document.getElementById('inputBoughtDate').value = todayStr();
+  document.getElementById('inputWaterFreq').value = '7';
+  document.getElementById('inputMemo').value = '';
+  document.getElementById('editingId').value = '';
+  const area = document.getElementById('photoUploadArea');
+  area.innerHTML = `<span>📷</span><span>タップして写真を選択</span><input type="file" accept="image/*" id="photoInput" onchange="handlePhotoSelect(event)">`;
+  openModal('addModal');
+}
+
+function openEditModal(id) {
+  const p = plants.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('addModalTitle').textContent = '植物を編集';
+  document.getElementById('inputName').value = p.name;
+  document.getElementById('inputType').value = p.type || '';
+  document.getElementById('inputLocation').value = p.location || '';
+  document.getElementById('inputBoughtDate').value = p.boughtDate || '';
+  document.getElementById('inputWaterFreq').value = String(p.waterFreq);
+  document.getElementById('inputMemo').value = p.memo || '';
+  document.getElementById('editingId').value = id;
+  const area = document.getElementById('photoUploadArea');
+  if (p.photo) {
+    area.innerHTML = `<img src="${p.photo}" alt=""><input type="file" accept="image/*" id="photoInput" onchange="handlePhotoSelect(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">`;
+  } else {
+    area.innerHTML = `<span>📷</span><span>タップして写真を選択</span><input type="file" accept="image/*" id="photoInput" onchange="handlePhotoSelect(event)">`;
+  }
+  openModal('addModal');
+}
+
+function handlePhotoSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const area = document.getElementById('photoUploadArea');
+    area.innerHTML = `<img src="${ev.target.result}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px;"><input type="file" accept="image/*" id="photoInput" onchange="handlePhotoSelect(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">`;
+    area.dataset.photo = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function savePlant() {
+  const name = document.getElementById('inputName').value.trim();
+  if (!name) { showToast('植物名を入力してください'); return; }
+  const editingId = document.getElementById('editingId').value;
+  const area = document.getElementById('photoUploadArea');
+  const photo = area.dataset.photo || null;
+
+  const data = {
+    name,
+    type: document.getElementById('inputType').value,
+    location: document.getElementById('inputLocation').value.trim(),
+    boughtDate: document.getElementById('inputBoughtDate').value,
+    waterFreq: parseInt(document.getElementById('inputWaterFreq').value),
+    memo: document.getElementById('inputMemo').value.trim(),
+  };
+
+  if (editingId) {
+    const idx = plants.findIndex(p => p.id === parseInt(editingId));
+    if (idx !== -1) {
+      plants[idx] = { ...plants[idx], ...data };
+      if (photo) plants[idx].photo = photo;
+    }
+    showToast('更新しました');
+  } else {
+    plants.push({
+      id: Date.now(),
+      ...data,
+      photo: photo,
+      health: 'good',
+      healthNote: '',
+      lastWatered: null,
+      lastLeafWater: null,
+      waterLogs: [],
+      leafWaterLogs: [],
+      diary: [],
+      repots: [],
+      addedAt: todayStr(),
+    });
+    showToast('追加しました 🌿');
+  }
+  saveData();
+  closeModal('addModal');
+  renderList();
+  document.getElementById('totalCount').textContent = plants.length;
+}
+
+function deletePlant(id) {
+  if (!confirm('この植物を削除しますか？')) return;
+  plants = plants.filter(p => p.id !== id);
+  saveData();
+  showToast('削除しました');
+  showPage('home');
+}
+
+// 水やり
+function openWaterModal(id) {
+  document.getElementById('wateringPlantId').value = id;
+  document.getElementById('waterDate').value = todayStr();
+  document.getElementById('waterNote').value = '';
+  openModal('waterModal');
+}
+function saveWatering() {
+  const id = parseInt(document.getElementById('wateringPlantId').value);
+  const date = document.getElementById('waterDate').value;
+  const note = document.getElementById('waterNote').value.trim();
+  const p = plants.find(x => x.id === id);
+  if (!p) return;
+  p.lastWatered = date;
+  p.waterLogs = p.waterLogs || [];
+  p.waterLogs.push({ date, note });
+  saveData();
+  closeModal('waterModal');
+  showToast('水やりを記録しました 💧');
+  if (currentDetailId === id) openDetail(id);
+}
+
+// 葉水
+function openLeafWaterModal(id) {
+  document.getElementById('leafWaterPlantId').value = id;
+  document.getElementById('leafWaterDate').value = todayStr();
+  openModal('leafWaterModal');
+}
+function saveLeafWater() {
+  const id = parseInt(document.getElementById('leafWaterPlantId').value);
+  const date = document.getElementById('leafWaterDate').value;
+  const p = plants.find(x => x.id === id);
+  if (!p) return;
+  p.lastLeafWater = date;
+  p.leafWaterLogs = p.leafWaterLogs || [];
+  p.leafWaterLogs.push({ date });
+  saveData();
+  closeModal('leafWaterModal');
+  showToast('葉水を記録しました 🌫️');
+  if (currentDetailId === id) openDetail(id);
+}
+
+// 健康状態
+function openHealthModal(id) {
+  const p = plants.find(x => x.id === id);
+  document.getElementById('healthPlantId').value = id;
+  document.getElementById('healthStatus').value = p.health || 'good';
+  document.getElementById('healthNote').value = p.healthNote || '';
+  openModal('healthModal');
+}
+function saveHealth() {
+  const id = parseInt(document.getElementById('healthPlantId').value);
+  const p = plants.find(x => x.id === id);
+  if (!p) return;
+  p.health = document.getElementById('healthStatus').value;
+  p.healthNote = document.getElementById('healthNote').value.trim();
+  saveData();
+  closeModal('healthModal');
+  showToast('健康状態を更新しました');
+  if (currentDetailId === id) openDetail(id);
+}
+
+// 日記
+function openDiaryModal(id) {
+  document.getElementById('diaryPlantId').value = id;
+  document.getElementById('diaryDate').value = todayStr();
+  document.getElementById('diaryText').value = '';
+  openModal('diaryModal');
+}
+function saveDiary() {
+  const id = parseInt(document.getElementById('diaryPlantId').value);
+  const text = document.getElementById('diaryText').value.trim();
+  if (!text) { showToast('メモを入力してください'); return; }
+  const p = plants.find(x => x.id === id);
+  if (!p) return;
+  p.diary = p.diary || [];
+  p.diary.push({ date: document.getElementById('diaryDate').value, text });
+  saveData();
+  closeModal('diaryModal');
+  showToast('日記を記録しました 📝');
+  if (currentDetailId === id) openDetail(id);
+}
+
+// 植え替え
+function openRepotModal(id) {
+  document.getElementById('repotPlantId').value = id;
+  document.getElementById('repotDate').value = todayStr();
+  document.getElementById('repotPotSize').value = '';
+  document.getElementById('repotNote').value = '';
+  openModal('repotModal');
+}
+function saveRepot() {
+  const id = parseInt(document.getElementById('repotPlantId').value);
+  const p = plants.find(x => x.id === id);
+  if (!p) return;
+  p.repots = p.repots || [];
+  p.repots.push({
+    date: document.getElementById('repotDate').value,
+    potSize: document.getElementById('repotPotSize').value,
+    note: document.getElementById('repotNote').value.trim(),
+  });
+  saveData();
+  closeModal('repotModal');
+  showToast('植え替えを記録しました 🪴');
+  if (currentDetailId === id) openDetail(id);
+}
+
+// ==================== 統計 ====================
+function updateStats() {
+  document.getElementById('stat-total').textContent = plants.length;
+  const today = todayStr();
+  const wateredToday = plants.filter(p => p.lastWatered === today).length;
+  document.getElementById('stat-watered-today').textContent = wateredToday;
+  const needWater = plants.filter(p => { const d = daysUntilWater(p); return d !== null && d <= 0; }).length;
+  document.getElementById('stat-need-water').textContent = needWater;
+  const watch = plants.filter(p => p.health !== 'good').length;
+  document.getElementById('stat-watch').textContent = watch;
+
+  // 置き場所別
+  const locs = {};
+  plants.forEach(p => { const l = p.location || '未設定'; locs[l] = (locs[l] || 0) + 1; });
+  document.getElementById('stat-locations').innerHTML = Object.entries(locs)
+    .sort((a,b) => b[1]-a[1])
+    .map(([l,c]) => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--sand);"><span>${l}</span><span style="font-weight:500;">${c}鉢</span></div>`)
+    .join('') || '<div style="color:var(--text-soft);">データなし</div>';
+
+  // 最近の植え替え
+  const allRepots = [];
+  plants.forEach(p => {
+    (p.repots || []).forEach(r => allRepots.push({ ...r, plantName: p.name }));
+  });
+  allRepots.sort((a,b) => b.date.localeCompare(a.date));
+  document.getElementById('stat-repots').innerHTML = allRepots.slice(0,5).map(r =>
+    `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--sand);font-size:12px;">
+      <span><span style="color:var(--green-deep);font-weight:500;">${r.plantName}</span> → ${r.potSize ? r.potSize+'号鉢' : '—'}</span>
+      <span style="color:var(--text-soft);">${formatDateJP(r.date)}</span>
+    </div>`
+  ).join('') || '<div style="color:var(--text-soft);">記録なし</div>';
+}
+
+// ==================== バックアップ ====================
+function exportData() {
+  const json = JSON.stringify(plants, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `plant_journal_${todayStr()}.json`;
+  a.click();
+  showToast('エクスポートしました 📤');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data)) throw new Error();
+      if (!confirm(`${data.length}件のデータを読み込みます。現在のデータは上書きされます。よろしいですか？`)) return;
+      plants = data;
+      saveData();
+      renderList();
+      showToast('インポートしました 📥');
+    } catch {
+      showToast('読み込みに失敗しました');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function confirmClearAll() {
+  if (!confirm('すべてのデータを削除します。この操作は元に戻せません。')) return;
+  plants = [];
+  saveData();
+  renderList();
+  showToast('データを削除しました');
+}
+
+// ==================== トースト ====================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ==================== オーバーレイクローズ ====================
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ==================== 初期化 ====================
+loadData();
+renderList();
+</script>
+</body>
+</html>
