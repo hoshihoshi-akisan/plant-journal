@@ -180,8 +180,14 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--cream);color:var(--t
 <div class="page" id="page-backup">
   <div class="section-title">💾 データ管理</div>
   <div class="backup-card" style="border-left:3px solid var(--gm);">
-    <h3>🔄 データ保存について</h3>
-    <p>データはブラウザの複数の場所に保存されます。iOSは7日間未使用でデータが消える場合があります。定期的にエクスポートをおすすめします。</p>
+    <h3>☁️ GitHub連携</h3>
+    <p>GitHubにデータを保存すると、iOSがブラウザのデータを消しても安全です。一度設定すれば自動で保存・読み込みされます。</p>
+    <div class="form-group" style="margin-bottom:8px;">
+      <label class="form-label">GitHubトークン</label>
+      <input class="form-input" type="password" id="tokenInput" placeholder="ghp_..." oninput="updateTokenStatus()">
+    </div>
+    <div id="tokenStatus" style="font-size:12px;color:var(--soft);margin-bottom:10px;"></div>
+    <button class="btn-primary" onclick="saveToken()" style="margin-bottom:0;">トークンを保存</button>
   </div>
   <div class="backup-card">
     <h3>📤 エクスポート</h3>
@@ -344,6 +350,72 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--cream);color:var(--t
 <div class="save-indicator" id="saveIndicator">💾 保存済み</div>
 
 <script>
+
+// ===== GitHub保存 =====
+const GITHUB_OWNER = 'hoshihoshi-akisan';
+const GITHUB_REPO = 'plant-journal';
+const GITHUB_FILE = 'data.json';
+let githubToken = '';
+let githubFileSha = null;
+let saveTimer = null;
+
+function getToken() {
+  if (githubToken) return githubToken;
+  githubToken = localStorage.getItem('gh_token') || '';
+  return githubToken;
+}
+
+function setToken(token) {
+  githubToken = token;
+  try { localStorage.setItem('gh_token', token); } catch(e) {}
+}
+
+async function loadFromGitHub() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const data = await res.json();
+    githubFileSha = data.sha;
+    const decoded = atob(data.content.replace(/\n/g, ''));
+    return JSON.parse(decoded);
+  } catch(e) { return null; }
+}
+
+async function saveToGitHub(plantsData) {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(plantsData, null, 2))));
+    const body = {
+      message: 'update plant data',
+      content: content,
+    };
+    if (githubFileSha) body.sha = githubFileSha;
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    githubFileSha = data.content.sha;
+    return true;
+  } catch(e) { return false; }
+}
+
+function scheduleSaveToGitHub() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const ok = await saveToGitHub(plants);
+    if (ok) showToast('☁️ GitHubに保存しました');
+  }, 2000);
+}
+
 const INITIAL_PLANTS=[
   {name:'モンステラ',type:'観葉植物',waterFreq:7},
   {name:'ヒメモンステラ',type:'観葉植物',waterFreq:7},
@@ -390,6 +462,7 @@ function saveData(){
   if(db)try{const tx=db.transaction('data','readwrite');tx.objectStore('data').put(j,'plants')}catch(e){}
   const si=document.getElementById('saveIndicator');
   si.classList.add('show');setTimeout(()=>si.classList.remove('show'),1500);
+  scheduleSaveToGitHub();
 }
 
 function initIDB(){return new Promise(res=>{try{const r=indexedDB.open('PlantJournal',1);r.onupgradeneeded=e=>e.target.result.createObjectStore('data');r.onsuccess=e=>{db=e.target.result;res()};r.onerror=()=>res()}catch(e){res()}})}
@@ -397,6 +470,22 @@ function loadFromIDB(){return new Promise(res=>{if(!db){res(null);return}try{con
 
 async function loadData(){
   await initIDB();
+  // トークンをローカルから復元
+  const savedToken = localStorage.getItem('gh_token');
+  if (savedToken) setToken(savedToken);
+
+  // GitHub優先で読み込み
+  const ghData = await loadFromGitHub();
+  if (ghData && Array.isArray(ghData)) {
+    plants = ghData;
+    // ローカルにも同期
+    const j = JSON.stringify(plants);
+    try{localStorage.setItem('pj_v3',j)}catch(e){}
+    if(db)try{const tx=db.transaction('data','readwrite');tx.objectStore('data').put(j,'plants')}catch(e){}
+    return;
+  }
+
+  // GitHubになければローカルから
   let j=null;
   try{j=localStorage.getItem('pj_v3')}catch(e){}
   if(!j)try{j=sessionStorage.getItem('pj_v3')}catch(e){}
@@ -675,6 +764,32 @@ function renderGantt(){
 }
 
 // ===== バックアップ =====
+function updateTokenStatus(){
+  const val = document.getElementById('tokenInput').value;
+  const status = document.getElementById('tokenStatus');
+  if (!val) { status.textContent = ''; return; }
+  if (val.startsWith('ghp_')) {
+    status.textContent = '✅ 形式OK';
+    status.style.color = 'var(--gm)';
+  } else {
+    status.textContent = '⚠️ ghp_から始まるトークンを入力してください';
+    status.style.color = 'var(--warn)';
+  }
+}
+function saveToken(){
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) { showToast('トークンを入力してください'); return; }
+  setToken(token);
+  showToast('トークンを保存しました ☁️');
+  scheduleSaveToGitHub();
+}
+function initTokenUI(){
+  const token = getToken();
+  if (token) {
+    document.getElementById('tokenInput').value = token;
+    updateTokenStatus();
+  }
+}
 function exportData(){
   const blob=new Blob([JSON.stringify(plants,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`plant_journal_${todayStr()}.json`;a.click();
@@ -702,7 +817,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('clic
 // 30秒ごとに再保存
 setInterval(()=>{if(plants.length>0)saveData()},30000);
 
-loadData().then(()=>renderList());
+loadData().then(()=>{renderList();initTokenUI();});
 </script>
 </body>
 </html>
